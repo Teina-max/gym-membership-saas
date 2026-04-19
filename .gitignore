@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+dist-ssr/
+
+# Environment
+.env
+.env.local
+.env.production
+*.local
+
+# Supabase
+supabase/.branches
+supabase/.temp
+
+# TanStack Router
+.tanstack/
+
+# Testing
+coverage/
+playwright-report/
+test-results/
+
+# Logs
+*.log
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
