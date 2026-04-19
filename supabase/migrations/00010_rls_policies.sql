@@ -268,11 +268,10 @@ CREATE POLICY audit_log_admin_select ON public.audit_log
   FOR SELECT TO authenticated
   USING (public.get_user_role() IN ('admin', 'manager'));
 
--- Insert is done by triggers via SECURITY DEFINER functions (no direct insert policy needed for users)
--- But we allow service_role and authenticated with staff role for manual inserts
-CREATE POLICY audit_log_staff_insert ON public.audit_log
-  FOR INSERT TO authenticated
-  WITH CHECK (public.is_staff());
+-- No INSERT policy for authenticated users. All audit entries are written by
+-- the SECURITY DEFINER function public.log_audit(), called from triggers.
+-- Allowing direct INSERT from staff roles would let a compromised account
+-- forge entries on behalf of other users.
 
 -- ============================================================================
 -- qr_tokens
@@ -283,20 +282,23 @@ CREATE POLICY qr_tokens_member_select ON public.qr_tokens
   FOR SELECT TO authenticated
   USING (member_id = auth.uid());
 
--- Staff can read tokens (for validation)
+-- Staff (excluding coach) can read tokens for validation at check-in.
+-- Coaches do not perform check-ins, so they have no legitimate need to read
+-- member QR tokens — keeping them out reduces blast radius if a coach account
+-- is compromised.
 CREATE POLICY qr_tokens_staff_select ON public.qr_tokens
   FOR SELECT TO authenticated
-  USING (public.is_staff());
+  USING (public.get_user_role() IN ('admin', 'manager', 'front_desk'));
 
 -- Tokens are created by Edge Functions (service_role), no user insert policy needed
 -- But allow staff for manual token management
 CREATE POLICY qr_tokens_staff_insert ON public.qr_tokens
   FOR INSERT TO authenticated
-  WITH CHECK (public.is_staff());
+  WITH CHECK (public.get_user_role() IN ('admin', 'manager', 'front_desk'));
 
 CREATE POLICY qr_tokens_staff_delete ON public.qr_tokens
   FOR DELETE TO authenticated
-  USING (public.is_staff());
+  USING (public.get_user_role() IN ('admin', 'manager', 'front_desk'));
 
 -- ============================================================================
 -- notification_log
